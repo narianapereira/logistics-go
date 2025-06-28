@@ -13,31 +13,31 @@ import (
 type TextParser struct {
 }
 
-type OrderLine struct {
-	UserId    string    `json:"user_id"`
-	Name      string    `json:"name"`
-	OrderId   string    `json:"order_id"`
-	ProductId string    `json:"product_id"`
-	Price     float64   `json:"total"`
-	OrderDate time.Time `json:"date"`
+type Product struct {
+	ProductId string `json:"product_id"`
+	Value     string `json:"value"`
 }
 
 type Order struct {
-	OrderId   string     `json:"order_id"`
-	Total     float64    `json:"total"`
-	OrderDate time.Time  `json:"date"`
-	Products  []Products `json:"products"`
-}
-
-type Products struct {
-	ProductId string  `json:"product_id"`
-	Value     float64 `json:"value"`
+	OrderId  string    `json:"order_id"`
+	Total    string    `json:"total"`
+	Date     string    `json:"date"`
+	Products []Product `json:"products"`
 }
 
 type UserWithOrders struct {
-	UserId    string  `json:"user_id"`
-	Name      string  `json:"name"`
+	UserId string  `json:"user_id"`
+	Name   string  `json:"name"`
 	Orders []Order `json:"orders"`
+}
+
+type orderLineRaw struct {
+	UserId    string
+	Name      string
+	OrderId   string
+	ProductId string
+	Value     float64
+	Date      time.Time
 }
 
 func NewTextParser() *TextParser {
@@ -46,84 +46,105 @@ func NewTextParser() *TextParser {
 
 func (t *TextParser) Parse(content []byte) ([]byte, error) {
 	scanner := bufio.NewScanner(bytes.NewReader(content))
-	var ordersMap = make(map[string][]OrderLine)
 
+	var lines []orderLineRaw
 	for scanner.Scan() {
 		line := scanner.Text()
-		if line == "" {
+		if strings.TrimSpace(line) == "" {
 			continue
 		}
 
-		orderLine, err := buildOrder(line)
+		orderLine, err := parseLine(line)
 		if err != nil {
 			return nil, err
 		}
-		addOrderToMap(orderLine, ordersMap)
+		lines = append(lines, orderLine)
 	}
 
-	userWithOrdersList := processUserOrders(ordersMap)
+	usersMap := make(map[string]*UserWithOrders)
 
-	result, err := json.Marshal(userWithOrdersList)
-	if err != nil {
-		fmt.Errorf("erro ao converter text para JSON: %w", err)
-	}
-
-	return result, nil
-}
-
-func processUserOrders(ordersMap map[string][]OrderLine) []UserWithOrders {
-	var userOrderList []UserWithOrders
-
-	for orderId := range ordersMap {
-		orders := ordersMap[orderId]
-		products := make([]Products, len(orders))
-		for _, orderLine := range orders {
-			product := Products{
-				ProductId: orderLine.ProductId,
-				Value: orderLine.Price,
+	for _, l := range lines {
+		user, exists := usersMap[l.UserId]
+		if !exists {
+			user = &UserWithOrders{
+				UserId: l.UserId,
+				Name:   l.Name,
+				Orders: []Order{},
 			}
-			products = append(products, product)
+			usersMap[l.UserId] = user
 		}
-		userOrders := UserWithOrders{
-			UserId:    orders[0].UserId,
-			Name:      orders[0].Name,
-			Orders: 
+
+		var order *Order
+		for i := range user.Orders {
+			if user.Orders[i].OrderId == l.OrderId {
+				order = &user.Orders[i]
+				break
+			}
 		}
-		userOrderList = append(userOrderList, userOrders)
+
+		if order == nil {
+			newOrder := Order{
+				OrderId:  l.OrderId,
+				Date:     l.Date.Format("2006-01-02"),
+				Products: []Product{},
+				Total:    "0.00",
+			}
+			user.Orders = append(user.Orders, newOrder)
+			order = &user.Orders[len(user.Orders)-1]
+		}
+
+		order.Products = append(order.Products, Product{
+			ProductId: l.ProductId,
+			Value:     fmt.Sprintf("%.2f", l.Value),
+		})
+
+		totalFloat, _ := strconv.ParseFloat(order.Total, 64)
+		totalFloat += l.Value
+		order.Total = fmt.Sprintf("%.2f", totalFloat)
 	}
 
-	return userOrderList
-}
-
-func addOrderToMap(line OrderLine, ordersMap map[string][]OrderLine) {
-
-	if orders, exists := ordersMap[line.OrderId]; exists {
-		ordersMap[line.OrderId] = append(orders, line)
-	} else {
-		ordersMap[line.OrderId] = []OrderLine{line}
+	var result []UserWithOrders
+	for _, u := range usersMap {
+		result = append(result, *u)
 	}
-}
 
-func buildOrder(line string) (OrderLine, error) {
-	obj := OrderLine{
-		UserId:    strings.TrimSpace(line[0:10]),
-		Name:      strings.TrimSpace(line[10:55]),
-		OrderId:   strings.TrimSpace(line[55:65]),
-		ProductId: strings.TrimSpace(line[65:75]),
-	}
-	valorStr := strings.TrimSpace(line[75:87])
-	valor, err := strconv.ParseFloat(valorStr, 64)
+	jsonResult, err := json.MarshalIndent(result, "", "  ")
 	if err != nil {
-		return OrderLine{}, fmt.Errorf("erro ao converter valor do produto: %w", err)
+		return nil, fmt.Errorf("erro ao converter text para JSON: %w", err)
 	}
-	obj.Price = valor
+
+	return jsonResult, nil
+}
+
+func parseLine(line string) (orderLineRaw, error) {
+	if len(line) < 95 {
+		return orderLineRaw{}, fmt.Errorf("linha com tamanho inválido")
+	}
+
+	userId := strings.TrimLeft(line[0:10], "0")
+	name := strings.TrimSpace(line[10:55])
+
+	orderId := strings.TrimLeft(line[55:65], "0")
+	productId := strings.TrimLeft(line[65:75], "0")
+
+	valueStr := strings.TrimSpace(line[75:87])
+	value, err := strconv.ParseFloat(valueStr, 64)
+	if err != nil {
+		return orderLineRaw{}, fmt.Errorf("erro ao converter valor do produto: %w", err)
+	}
 
 	dateStr := strings.TrimSpace(line[87:95])
 	date, err := time.Parse("20060102", dateStr)
 	if err != nil {
-		return OrderLine{}, fmt.Errorf("erro ao converter data: %w", err)
+		return orderLineRaw{}, fmt.Errorf("erro ao converter data: %w", err)
 	}
-	obj.OrderDate = date
 
-	return obj, nil
+	return orderLineRaw{
+		UserId:    userId,
+		Name:      name,
+		OrderId:   orderId,
+		ProductId: productId,
+		Value:     value,
+		Date:      date,
+	}, nil
 }
