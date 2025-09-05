@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: logistics-deployment
+  labels:
+    app: logistics
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: logistics
+  template:
+    metadata:
+      labels:
+        app: logistics
+    spec:
+      containers:
+      - name: logistics
+        image: docker.io/library/app-go:v1
+        ports:
+        - containerPort: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: logistics-service
+spec:
+  selector:
+    app: logistics
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8080

@@ -1,7 +1,5 @@
 FROM golang:1.23.0-alpine AS builder
 
-RUN apk add
-
 WORKDIR /app
 
 COPY go.mod go.sum ./
@@ -9,9 +7,9 @@ RUN go mod download
 
 COPY . .
 
-RUN go build -o app ./cmd
+RUN CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-w -extldflags "-static"' -o app ./cmd
 
-FROM alpine:latest
+FROM golang:1.23.0-alpine
 
 RUN adduser -D appuser
 
@@ -21,6 +19,6 @@ USER appuser
 
 WORKDIR /app
 
-WORKDIR /app
+EXPOSE 8080
 
 ENTRYPOINT ["./app"]
