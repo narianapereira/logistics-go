@@ -5,12 +5,14 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"strconv"
 	"strings"
 	"time"
 )
 
 type TextParser struct {
+	logger *slog.Logger
 }
 
 type Product struct {
@@ -40,14 +42,17 @@ type orderLineRaw struct {
 	Date      time.Time
 }
 
-func NewTextParser() *TextParser {
-	return &TextParser{}
+func NewTextParser(logger *slog.Logger) *TextParser {
+	return &TextParser{
+		logger: logger,
+	}
 }
 
 func (t *TextParser) Parse(content []byte) ([]byte, error) {
 	scanner := bufio.NewScanner(bytes.NewReader(content))
 
 	var lines []orderLineRaw
+	t.logger.Info("Stating document scanning")
 	for scanner.Scan() {
 		line := scanner.Text()
 		if strings.TrimSpace(line) == "" {
@@ -56,6 +61,7 @@ func (t *TextParser) Parse(content []byte) ([]byte, error) {
 
 		orderLine, err := parseLine(line)
 		if err != nil {
+			t.logger.Error("Error parsing line")
 			return nil, err
 		}
 		lines = append(lines, orderLine)
@@ -110,6 +116,7 @@ func (t *TextParser) Parse(content []byte) ([]byte, error) {
 
 	jsonResult, err := json.MarshalIndent(result, "", "  ")
 	if err != nil {
+		t.logger.Error("Error converting text to JSON")
 		return nil, fmt.Errorf("erro ao converter text para JSON: %w", err)
 	}
 

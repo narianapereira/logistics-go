@@ -2,11 +2,16 @@ package parser
 
 import (
 	"encoding/json"
+	"io"
+	"log/slog"
 	"testing"
 )
 
 func TestTextParser_Parse(t *testing.T) {
-	parser := NewTextParser()
+	noopHandler := slog.NewJSONHandler(io.Discard, nil)
+
+	logger := slog.New(noopHandler)
+	parser := NewTextParser(logger)
 
 	input := []byte(
 		`0000000077                         Mrs. Stephen Trantow00000008440000000005     1288.7720211127
