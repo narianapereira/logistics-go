@@ -61,10 +61,6 @@ jobs:
     needs: build-and-push-image
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
-    
-    env:
-      TF_VAR_gcp_project_id: ${{ secrets.GCP_PROJECT_ID }}
-      TF_VAR_app_docker_image: ${{ env.DOCKER_IMAGE }}:${{ github.sha }}
 
     steps:
       - name: Checkout code
@@ -88,3 +84,8 @@ jobs:
       - name: Terraform Apply
         run: terraform apply -auto-approve
         working-directory: ./infra
+          TF_VAR_gcp_project_id: ${{ secrets.GCP_PROJECT_ID }}
+          TF_VAR_app_docker_image: ${{ env.DOCKER_IMAGE }}:${{ github.sha }}
+        env:
+          TF_VAR_gcp_project_id: ${{ secrets.GCP_PROJECT_ID }}
+          TF_VAR_app_docker_image: ${{ env.DOCKER_IMAGE }}:${{ github.sha }}  
