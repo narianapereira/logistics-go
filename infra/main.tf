@@ -1,12 +1,11 @@
 # --- PROVIDERS AND CONFIG ---
 
 provider "google" {
-  project = var.gcp_project_id
   region  = var.gcp_region
 }
 
 resource "google_container_cluster" "logistics_go_cluster" {
-  name                     = "logistics-go-cluster-${var.gcp_project_id}"
+  name                     = "logistics-go-cluster"
   location                 = var.gcp_region
   
   enable_autopilot         = true 
