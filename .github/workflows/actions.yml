@@ -57,15 +57,36 @@ jobs:
           file: ./Dockerfile 
           push: true
           tags: ${{ env.DOCKER_IMAGE }}:latest, ${{ env.DOCKER_IMAGE }}:${{ github.sha }}
-  
-  deploy:
-    name: Render deployment
+
+  terraform_gke_deploy:
+    name: Provision GKE Cluster and Deploy App
     needs: build-and-push-image
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     
+    env:
+      TF_VAR_gcp_project_id: ${{ secrets.GCP_PROJECT_ID }}
+      TF_VAR_app_docker_image: ${{ env.DOCKER_IMAGE }}:${{ github.sha }}
+
     steps:
-      - name: Trigger Deploy Hook on Render
-        run: |
-          echo "A imagem Docker foi atualizada. Disparando Deploy Hook no Render..."
-          curl -X POST "${{ secrets.RENDER_DEPLOY_HOOK }}"
+      - name: Checkout code
+        uses: actions/checkout@v5
+        
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+          
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+        
+      - name: Set up gcloud CLI
+        uses: google-github-actions/setup-gcloud@v2
+          
+      - name: Terraform Init
+        run: terraform init
+        working-directory: ./infra
+        
+      - name: Terraform Apply
+        run: terraform apply -auto-approve
+        working-directory: ./infra        
