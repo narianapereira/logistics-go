@@ -18,6 +18,7 @@ resource "google_container_cluster" "logistics_go_cluster" {
 data "google_client_config" "current" {}
 
 provider "kubernetes" {
+  alias                  = "gke"  
   host                   = "https://${google_container_cluster.logistics_go_cluster.endpoint}"
   token                  = data.google_client_config.current.access_token
   cluster_ca_certificate = base64decode(google_container_cluster.logistics_go_cluster.master_auth[0].cluster_ca_certificate)
@@ -45,10 +46,14 @@ locals {
 }
 
 resource "kubernetes_manifest" "logistics_app_deployment" {
+  provider = kubernetes.gke
+
   manifest = yamldecode(local.rendered_deployment)
 }
 
 resource "kubernetes_manifest" "logistics_app_service" {
+  provider = kubernetes.gke
+
   manifest = yamldecode(local.rendered_service)
 
   depends_on = [kubernetes_manifest.logistics_app_deployment]
@@ -57,6 +62,8 @@ resource "kubernetes_manifest" "logistics_app_service" {
 # --- OUTPUT ---
 
 data "kubernetes_service" "logistics_service_data" {
+  provider = kubernetes.gke
+    
   metadata {
     name = "logistics-service"
   }
