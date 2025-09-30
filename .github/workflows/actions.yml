@@ -1,4 +1,4 @@
-name: Go CI/CD Pipeline
+name: Go CI/CD Pipeline (GKE & Terraform)
 
 on:
   push:
@@ -10,7 +10,6 @@ on:
 
 env:
   DOCKER_IMAGE: ${{ secrets.DOCKER_USERNAME }}/logistics-go
-
 
 jobs:
   test:
@@ -37,7 +36,6 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-
       - name: Checkout code
         uses: actions/checkout@v5
 
@@ -57,7 +55,7 @@ jobs:
           file: ./Dockerfile 
           push: true
           tags: ${{ env.DOCKER_IMAGE }}:latest, ${{ env.DOCKER_IMAGE }}:${{ github.sha }}
-
+          
   terraform_gke_deploy:
     name: Provision GKE Cluster and Deploy App
     needs: build-and-push-image
@@ -82,11 +80,11 @@ jobs:
         
       - name: Set up gcloud CLI
         uses: google-github-actions/setup-gcloud@v2
-          
+        
       - name: Terraform Init
         run: terraform init
         working-directory: ./infra
         
       - name: Terraform Apply
         run: terraform apply -auto-approve
-        working-directory: ./infra        
+        working-directory: ./infra
