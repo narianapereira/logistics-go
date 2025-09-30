@@ -18,10 +18,8 @@ resource "google_container_cluster" "logistics_go_cluster" {
 data "google_client_config" "current" {}
 
 provider "kubernetes" {
-  alias                  = "gke"  
-  host                   = "https://${google_container_cluster.logistics_go_cluster.endpoint}"
-  token                  = data.google_client_config.current.access_token
-  cluster_ca_certificate = base64decode(google_container_cluster.logistics_go_cluster.master_auth[0].cluster_ca_certificate)
+  alias       = "gke"
+  config_path = "~/.kube/config"
 }
 
 # --- YAML AND DEPLOY ---

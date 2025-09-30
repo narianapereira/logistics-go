@@ -76,6 +76,12 @@ jobs:
         
       - name: Set up gcloud CLI
         uses: google-github-actions/setup-gcloud@v2
+
+      - name: Get GKE credentials
+        run: |
+          gcloud container clusters get-credentials logistics-go-cluster \
+            --region ${{ secrets.GCP_REGION }} \
+            --project ${{ secrets.GCP_PROJECT_ID }}  
         
       - name: Terraform Init
         run: terraform init
