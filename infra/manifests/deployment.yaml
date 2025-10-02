@@ -2,8 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: logistics-deployment
-  labels:
-    app: logistics
+  namespace: default
 spec:
   replicas: 1
   selector:
@@ -15,7 +14,7 @@ spec:
         app: logistics
     spec:
       containers:
-      - name: logistics
-        image: IMAGE_PLACEHOLDER
-        ports:
-        - containerPort: 8080
+        - name: logistics
+          image: IMAGE_PLACEHOLDER
+          ports:
+            - containerPort: 8080

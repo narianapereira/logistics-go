@@ -1,21 +1,5 @@
 # --- PROVIDERS AND CONFIG ---
 
-provider "google" {
-  region  = var.gcp_region
-}
-
-resource "google_container_cluster" "logistics_go_cluster" {
-  name                     = "logistics-go-cluster"
-  location                 = var.gcp_region
-  
-  enable_autopilot         = true 
-  
-  deletion_protection      = false 
-  
-  initial_node_count       = 1
-}
-
-data "google_client_config" "current" {}
 
 provider "kubernetes" {
   alias       = "gke"
@@ -57,18 +41,7 @@ resource "kubernetes_manifest" "logistics_app_service" {
   depends_on = [kubernetes_manifest.logistics_app_deployment]
 }
 
-# --- OUTPUT ---
 
-data "kubernetes_service" "logistics_service_data" {
-  provider = kubernetes.gke
-    
-  metadata {
-    name = "logistics-service"
-  }
-  depends_on = [kubernetes_manifest.logistics_app_service]
-}
-
-# Prints external api in actions
-output "app_external_ip" {
-    value = data.kubernetes_service.logistics_service_data.status[0].load_balancer[0].ingress[0].ip
+output "debug_rendered_yaml" {
+  value = local.rendered_deployment
 }
