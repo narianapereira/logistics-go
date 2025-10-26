@@ -75,8 +75,12 @@ jobs:
       - name: Set up Cloud SDK and Auth Plugin
         uses: 'google-github-actions/setup-gcloud@v2'
         with:
-          components: gke-gcloud-auth-plugin    
-          
+          components: gke-gcloud-auth-plugin   
+
+      - name: Install GKE Auth Plugin
+        run: |
+          gcloud components install gke-gcloud-auth-plugin --quiet
+     
       - name: Set up Terraform
         uses: hashicorp/setup-terraform@v3
                 
