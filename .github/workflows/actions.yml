@@ -70,12 +70,15 @@ jobs:
         uses: google-github-actions/auth@v2
         with:
           credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Set up Cloud SDK
+        uses: 'google-github-actions/setup-gcloud@v2'
+        with:
+          components:
+            - gke-gcloud-auth-plugin    
           
       - name: Set up Terraform
         uses: hashicorp/setup-terraform@v3
-        
-      - name: Set up gcloud CLI
-        uses: google-github-actions/setup-gcloud@v2
 
       - name: Get GKE credentials
         run: |
