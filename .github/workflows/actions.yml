@@ -71,7 +71,7 @@ jobs:
         uses: google-github-actions/auth@v2
         with:
           credentials_json: ${{ secrets.GCP_SA_KEY }}
-          
+
       - name: Set up Cloud SDK and Auth Plugin
         uses: 'google-github-actions/setup-gcloud@v2'
         with:
