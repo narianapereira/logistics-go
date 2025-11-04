@@ -41,7 +41,3 @@ resource "kubernetes_manifest" "logistics_app_service" {
   depends_on = [kubernetes_manifest.logistics_app_deployment]
 }
 
-
-output "debug_rendered_yaml" {
-  value = local.rendered_deployment
-}
