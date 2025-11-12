@@ -54,7 +54,7 @@ jobs:
           context: .
           file: ./Dockerfile 
           push: true
-          tags: ${{ env.DOCKER_IMAGE }}:latest, ${{ env.DOCKER_IMAGE }}:${{ github.sha }}
+          tags: ${{ env.DOCKER_IMAGE }}:${{ github.sha }}
           
   terraform_gke_deploy:
     name: Deploy App
